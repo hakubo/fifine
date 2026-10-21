@@ -1,0 +1,40 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Slack Badge",
+  "Description": "The Slack icon with Slack's unread badge; press to open Slack.",
+  "Version": "0.2.0",
+  "Icon": "images/plugin",
+  "Category": "Slack",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.slack.badge",
+      "Name": "Slack",
+      "Tooltip": "The Slack icon with Slack's unread badge (DMs and mentions). Press to open Slack.",
+      "Icon": "images/slack",
+      "States": [
+        {
+          "Image": "images/slack-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}

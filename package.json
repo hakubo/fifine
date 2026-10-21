@@ -1,0 +1,13 @@
+{
+  "name": "fifine-deck-plugins",
+  "private": true,
+  "type": "module",
+  "description": "fifine Control Deck (StreamDock) plugins for macOS",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/install.mjs --all --build-only"
+  },
+  "dependencies": {
+    "ws": "8.18.0"
+  }
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- Settings panel for a Light Mood key, shown by Control Deck when the key is selected.
+     Lists the Miniserver's Lighting Controllers (the plugin runs `lox ls`) and saves the pick
+     in the key's settings. -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { margin: 0; padding: 8px 12px; background: transparent; color: #d8d8d8; font: 12px -apple-system, BlinkMacSystemFont, sans-serif; }
+    .row { display: flex; align-items: center; margin: 6px 0; }
+    label { width: 90px; flex: none; color: #969696; }
+    select, input { flex: 1; min-width: 0; height: 24px; box-sizing: border-box; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 6px; font: inherit; }
+    button { margin-left: 6px; height: 24px; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 8px; font: inherit; cursor: pointer; }
+    .note { margin: 4px 0 0 90px; color: #969696; }
+    .error { color: #ff6b6b; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <label for="light">Light</label>
+    <select id="light"><option value="">Loading…</option></select>
+    <button id="reload" title="Reload the list from the Miniserver">↻</button>
+  </div>
+  <div class="row">
+    <label for="label">Key label</label>
+    <input id="label" type="text" placeholder="Room name" />
+  </div>
+  <div id="note" class="note"></div>
+
+  <script>
+    let ws;
+    let uuid;
+    let action;
+    let settings = {};
+    let controllers = [];
+    const $ = (id) => document.getElementById(id);
+
+    const send = (msg) => ws?.readyState === 1 && ws.send(JSON.stringify(msg));
+    const requestList = () => {
+      $('note').textContent = 'Asking the Miniserver…';
+      $('note').className = 'note';
+      send({ event: 'sendToPlugin', action, context: uuid, payload: { request: 'controllers' } });
+    };
+
+    function save() {
+      send({ event: 'setSettings', context: uuid, payload: settings });
+      // also tell the plugin directly, in case the host doesn't echo didReceiveSettings
+      send({ event: 'sendToPlugin', action, context: uuid, payload: { settings } });
+    }
+
+    function fill() {
+      const sel = $('light');
+      sel.innerHTML = '';
+      const add = (value, text) => sel.add(new Option(text, value));
+      add('', '— pick a light —');
+      const known = controllers.some((c) => c.uuid === settings.uuid);
+      if (settings.uuid && !known) add(settings.uuid, `${settings.room} · ${settings.control || '?'}`);
+      for (const c of [...controllers].sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name))) add(c.uuid, `${c.room} · ${c.name}`);
+      sel.value = settings.uuid || '';
+    }
+
+    $('light').addEventListener('change', (e) => {
+      const c = controllers.find((x) => x.uuid === e.target.value);
+      settings = c ? { ...settings, uuid: c.uuid, room: c.room, control: c.name } : { label: settings.label };
+      save();
+    });
+    $('label').addEventListener('change', (e) => {
+      settings = { ...settings, label: e.target.value.trim() };
+      save();
+    });
+    $('reload').addEventListener('click', requestList);
+
+    // Called by Control Deck (Stream Deck–compatible property inspector API).
+    function connectElgatoStreamDeckSocket(port, inUUID, registerEvent, _info, actionInfo) {
+      uuid = inUUID;
+      const info = JSON.parse(actionInfo || '{}');
+      action = info.action;
+      settings = info.payload?.settings || {};
+      $('label').value = settings.label || '';
+      fill();
+      ws = new WebSocket(`ws://127.0.0.1:${port}`);
+      ws.onopen = () => {
+        send({ event: registerEvent, uuid });
+        requestList();
+      };
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'didReceiveSettings') {
+          settings = msg.payload?.settings || {};
+          $('label').value = settings.label || '';
+          fill();
+        } else if (msg.event === 'sendToPropertyInspector' && msg.payload?.controllers) {
+          const res = msg.payload.controllers;
+          if (res.error) {
+            $('note').textContent = `Couldn't list lights: ${res.error}`;
+            $('note').className = 'note error';
+            return;
+          }
+          controllers = res;
+          $('note').textContent = res.length ? '' : 'No Lighting Controllers found.';
+          fill();
+        }
+      };
+    }
+    window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+    window.connectSocket = connectElgatoStreamDeckSocket;
+  </script>
+</body>
+</html>

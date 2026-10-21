@@ -1,0 +1,6 @@
+{
+  "name": "fifine-usage",
+  "version": "0.1.0",
+  "author": { "name": "Jakub Olek" },
+  "description": "Records Claude's 5-hour and 7-day rate-limit usage to ~/.claude/fifine/usage.json for the Claude Usage key on a fifine Control Deck"
+}

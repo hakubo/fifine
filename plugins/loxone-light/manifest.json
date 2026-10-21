@@ -1,0 +1,41 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Loxone Light",
+  "Description": "Cycles a Loxone room's light moods and shows the active one.",
+  "Version": "0.2.0",
+  "Icon": "images/plugin",
+  "Category": "Loxone",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.loxone-light.mood",
+      "Name": "Light Mood",
+      "Tooltip": "Cycles a Loxone room's light moods; shows the active mood, or Off. Pick the light in the key's settings.",
+      "PropertyInspectorPath": "pi/index.html",
+      "Icon": "images/light",
+      "States": [
+        {
+          "Image": "images/light-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Claude Usage",
+  "Description": "Your Claude plan's 5-hour and 7-day usage limits on a key.",
+  "Version": "0.2.0",
+  "Icon": "images/plugin",
+  "Category": "Claude Usage",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.claude-usage.limits",
+      "Name": "Claude Usage",
+      "Tooltip": "Your 5-hour and 7-day Claude usage limits. Press to open claude.ai usage settings.",
+      "Icon": "images/usage",
+      "States": [
+        {
+          "Image": "images/usage-key",
+          "TitleAlignment": "top",
+          "FontSize": "11"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}

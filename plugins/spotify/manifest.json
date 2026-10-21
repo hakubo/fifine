@@ -1,0 +1,55 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Spotify",
+  "Description": "Spotify album cover with play/pause, and a next-track key. No Spotify login needed.",
+  "Version": "0.2.0",
+  "Icon": "images/plugin",
+  "Category": "Spotify",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.spotify.play-pause",
+      "Name": "Spotify",
+      "Tooltip": "The current Spotify track's album cover, dimmed while paused. Press to play/pause.",
+      "Icon": "images/spotify",
+      "States": [
+        {
+          "Image": "images/spotify-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    },
+    {
+      "UUID": "com.jakubolek.fifine.spotify.next",
+      "Name": "Spotify Next",
+      "Tooltip": "Skips to the next Spotify track.",
+      "Icon": "images/spotify-next",
+      "States": [
+        {
+          "Image": "images/spotify-next-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}

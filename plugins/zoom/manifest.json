@@ -1,0 +1,40 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Zoom Meeting",
+  "Description": "Shows your next Zoom meeting from macOS Calendar with a countdown, and joins it on press.",
+  "Version": "0.2.0",
+  "Icon": "images/plugin",
+  "Category": "Zoom",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.zoom.join",
+      "Name": "Zoom",
+      "Tooltip": "Shows your next Zoom meeting from an hour before, with a countdown; press to join it. Otherwise opens Zoom.",
+      "Icon": "images/zoom",
+      "States": [
+        {
+          "Image": "images/zoom-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}
