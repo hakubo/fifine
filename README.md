@@ -10,6 +10,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | [Slack Badge](plugins/slack) | Slack | Shows Slack's unread badge and opens Slack |
 | [Spotify](plugins/spotify) | Spotify, Spotify Next | Album cover with play/pause, and skip to the next track |
 | [Loxone Light](plugins/loxone-light) | Light Mood | Cycles a Loxone room's light moods and shows the active one |
+| [Pomodoro](plugins/pomodoro) | Pomodoro | Focus/break timer with a progress ring, today's pomodoro count and a chime |
 
 Each plugin's README covers what its key shows, what it needs, and how it works.
 
@@ -54,12 +55,12 @@ shared/           copied into every plugin as plugin/lib/
   png.mjs         dependency-free PNG encoder/decoder and key tiles
   font.mjs        pixel font for keys drawn without the host's title text
   text.mjs        word-wrap for key titles
-  paths.mjs       log and cache folders
+  paths.mjs       log, cache and state folders
 scripts/
   install.mjs     build, install, uninstall
 ```
 
-Plugins write logs to `~/Library/Logs/fifine/<plugin>.log` and caches to `~/Library/Caches/fifine/`. The Claude-related plugins keep their state in `~/.claude/fifine/`.
+Plugins write logs to `~/Library/Logs/fifine/<plugin>.log`, caches to `~/Library/Caches/fifine/` and state worth keeping to `~/Library/Application Support/fifine/`. The Claude-related plugins keep their state in `~/.claude/fifine/`.
 
 Icons for Zoom, Slack and Spotify are taken from the installed apps at build time and aren't part of this repo. Without the app, the key gets a plain coloured tile.
 
