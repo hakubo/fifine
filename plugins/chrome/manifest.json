@@ -1,0 +1,38 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Chrome Windows",
+  "Description": "Press to bring the next open Google Chrome window to the front.",
+  "Version": "0.1.0",
+  "Icon": "images/plugin",
+  "Category": "Chrome",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.chrome.cycle",
+      "Name": "Chrome Windows",
+      "Tooltip": "Press to cycle through your open Chrome windows. Opens Chrome if it isn't running.",
+      "Icon": "images/chrome",
+      "States": [
+        {
+          "Image": "images/chrome-key"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}
