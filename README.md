@@ -9,7 +9,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | [Zoom Meeting](plugins/zoom) | Zoom | Counts down to your next Zoom meeting from macOS Calendar and joins it on press |
 | [Slack Badge](plugins/slack) | Slack | Shows Slack's unread badge and opens Slack |
 | [Spotify](plugins/spotify) | Spotify, Spotify Next | Album cover with play/pause, and skip to the next track |
-| [Chrome Windows](plugins/chrome) | Chrome Windows | Cycles through your open Chrome windows on each press |
+| [Chrome Windows](plugins/chrome) | Chrome Windows | Shows how many Chrome windows are open and cycles through them on each press |
 | [Loxone Light](plugins/loxone-light) | Light Mood | Cycles a Loxone room's light moods and shows the active one |
 | [Pomodoro](plugins/pomodoro) | Pomodoro | Focus/break timer with a progress ring, today's pomodoro count and a chime |
 | [System Monitor](plugins/system-monitor) | System, CPU, Memory, Disk, Network | Live CPU, memory, disk and network activity with graphs; opens Activity Monitor on press |
@@ -55,6 +55,7 @@ plugins/<name>/
 shared/           copied into every plugin as plugin/lib/
   streamdock.mjs  WebSocket to Control Deck, logging, show-only-what-changed key updates
   png.mjs         dependency-free PNG encoder/decoder and key tiles
+  badge.mjs       an app icon with a red count badge (Slack, Chrome)
   font.mjs        pixel font for keys drawn without the host's title text
   draw.mjs        antialiased canvas and stroke font for keys drawn whole (Pomodoro, System Monitor)
   text.mjs        word-wrap for key titles
