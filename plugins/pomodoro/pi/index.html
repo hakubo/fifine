@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- Settings panel for the Pomodoro key, shown by Control Deck when the key is selected.
+     The deck has one timer, so these settings apply to every Pomodoro key. -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { margin: 0; padding: 8px 12px; background: transparent; color: #d8d8d8; font: 12px -apple-system, BlinkMacSystemFont, sans-serif; }
+    .row { display: flex; align-items: center; margin: 6px 0; }
+    label { width: 90px; flex: none; color: #969696; }
+    select, input { flex: 1; min-width: 0; height: 24px; box-sizing: border-box; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 6px; font: inherit; }
+    input[type='number'] { flex: none; width: 56px; }
+    input[type='range'] { padding: 0; background: transparent; }
+    .unit { margin-left: 6px; color: #969696; }
+    button { margin-left: 6px; height: 24px; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 8px; font: inherit; cursor: pointer; }
+    .note { margin: 4px 0 0 90px; color: #969696; }
+  </style>
+</head>
+<body>
+  <div class="row"><label for="focus">Focus</label><input id="focus" type="number" min="1" max="99" /><span class="unit">min</span></div>
+  <div class="row"><label for="short">Short break</label><input id="short" type="number" min="1" max="99" /><span class="unit">min</span></div>
+  <div class="row"><label for="long">Long break</label><input id="long" type="number" min="1" max="99" /><span class="unit">min</span></div>
+  <div class="row"><label for="every">Long break after</label><input id="every" type="number" min="1" max="99" /><span class="unit">pomodoros</span></div>
+  <div class="row">
+    <label for="sound">Sound</label>
+    <select id="sound">
+      <option value="chime">Chime</option>
+      <option value="Glass">Glass</option>
+      <option value="Hero">Hero</option>
+      <option value="Ping">Ping</option>
+      <option value="Purr">Purr</option>
+      <option value="Submarine">Submarine</option>
+      <option value="none">None</option>
+    </select>
+    <button id="test" title="Play the sound">▶</button>
+  </div>
+  <div class="row"><label for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.05" /></div>
+  <div class="note">Shared by every Pomodoro key. New durations apply from the next phase.</div>
+
+  <script>
+    const DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, sound: 'chime', volume: 0.7 };
+    const FIELDS = ['focus', 'short', 'long', 'every', 'sound', 'volume'];
+    let ws;
+    let uuid;
+    let action;
+    let settings = { ...DEFAULTS };
+    const $ = (id) => document.getElementById(id);
+
+    const send = (msg) => ws?.readyState === 1 && ws.send(JSON.stringify(msg));
+
+    function fill() {
+      for (const k of FIELDS) $(k).value = settings[k];
+    }
+
+    function save() {
+      for (const k of FIELDS) {
+        const v = $(k).value;
+        settings[k] = k === 'sound' ? v : Number(v);
+      }
+      send({ event: 'setSettings', context: uuid, payload: settings });
+      // also tell the plugin directly, in case the host doesn't echo didReceiveSettings
+      send({ event: 'sendToPlugin', action, context: uuid, payload: { settings } });
+    }
+
+    for (const k of FIELDS) $(k).addEventListener('change', save);
+    $('test').addEventListener('click', () => send({ event: 'sendToPlugin', action, context: uuid, payload: { settings, preview: 'focus-done' } }));
+
+    // Called by Control Deck (Stream Deck–compatible property inspector API).
+    function connectElgatoStreamDeckSocket(port, inUUID, registerEvent, _info, actionInfo) {
+      uuid = inUUID;
+      const info = JSON.parse(actionInfo || '{}');
+      action = info.action;
+      settings = { ...DEFAULTS, ...info.payload?.settings };
+      fill();
+      ws = new WebSocket(`ws://127.0.0.1:${port}`);
+      ws.onopen = () => {
+        send({ event: registerEvent, uuid });
+        // the timer's own settings may come from another key
+        send({ event: 'sendToPlugin', action, context: uuid, payload: { request: 'settings' } });
+      };
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'sendToPropertyInspector' && msg.payload?.settings) {
+          settings = { ...DEFAULTS, ...msg.payload.settings };
+          fill();
+        }
+      };
+    }
+    window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+    window.connectSocket = connectElgatoStreamDeckSocket;
+  </script>
+</body>
+</html>

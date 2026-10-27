@@ -1,0 +1,41 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Pomodoro",
+  "Description": "A focus and break timer with a progress ring, today's pomodoro count and a chime.",
+  "Version": "0.1.0",
+  "Icon": "images/plugin",
+  "Category": "Pomodoro",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.pomodoro.timer",
+      "Name": "Pomodoro",
+      "Tooltip": "Press to start, pause or resume; hold to reset. Shows time left, progress and today's pomodoros.",
+      "PropertyInspectorPath": "pi/index.html",
+      "Icon": "images/timer",
+      "States": [
+        {
+          "Image": "images/timer-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}
