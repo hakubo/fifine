@@ -24,7 +24,7 @@
     {
       "UUID": "com.jakubolek.fifine.spotify.play-pause",
       "Name": "Spotify",
-      "Tooltip": "The current Spotify track's album cover, dimmed while paused. Press to play/pause.",
+      "Tooltip": "The current Spotify track's album cover, dimmed while paused. Press to open Spotify, hold to play/pause, double tap to skip.",
       "Icon": "images/spotify",
       "States": [
         {
