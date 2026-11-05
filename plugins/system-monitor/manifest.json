@@ -1,0 +1,70 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "System Monitor",
+  "Description": "The Mac's CPU, memory, disk and network activity with live graphs. Press to open Activity Monitor.",
+  "Version": "0.1.0",
+  "Icon": "images/plugin",
+  "Category": "System Monitor",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.system-monitor.overview",
+      "Name": "System",
+      "Tooltip": "CPU, memory, disk and network on one key. Press to open Activity Monitor.",
+      "Icon": "images/overview",
+      "States": [{ "Image": "images/overview-key", "TitleAlignment": "middle", "FontSize": "9" }],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    },
+    {
+      "UUID": "com.jakubolek.fifine.system-monitor.cpu",
+      "Name": "CPU",
+      "Tooltip": "CPU use across all cores, with a two-minute graph. Press to open Activity Monitor.",
+      "Icon": "images/cpu",
+      "States": [{ "Image": "images/cpu-key", "TitleAlignment": "middle", "FontSize": "9" }],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    },
+    {
+      "UUID": "com.jakubolek.fifine.system-monitor.memory",
+      "Name": "Memory",
+      "Tooltip": "Memory used, coloured by memory pressure, with a two-minute graph. Press to open Activity Monitor.",
+      "Icon": "images/memory",
+      "States": [{ "Image": "images/memory-key", "TitleAlignment": "middle", "FontSize": "9" }],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    },
+    {
+      "UUID": "com.jakubolek.fifine.system-monitor.disk",
+      "Name": "Disk",
+      "Tooltip": "Disk writes and reads per second, with a two-minute graph. Press to open Activity Monitor.",
+      "Icon": "images/disk",
+      "States": [{ "Image": "images/disk-key", "TitleAlignment": "middle", "FontSize": "9" }],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    },
+    {
+      "UUID": "com.jakubolek.fifine.system-monitor.network",
+      "Name": "Network",
+      "Tooltip": "Network download and upload per second, with a two-minute graph. Press to open Activity Monitor.",
+      "Icon": "images/network",
+      "States": [{ "Image": "images/network-key", "TitleAlignment": "middle", "FontSize": "9" }],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}
