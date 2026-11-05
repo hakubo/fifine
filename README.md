@@ -11,6 +11,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | [Spotify](plugins/spotify) | Spotify, Spotify Next | Album cover with play/pause, and skip to the next track |
 | [Loxone Light](plugins/loxone-light) | Light Mood | Cycles a Loxone room's light moods and shows the active one |
 | [Pomodoro](plugins/pomodoro) | Pomodoro | Focus/break timer with a progress ring, today's pomodoro count and a chime |
+| [System Monitor](plugins/system-monitor) | System, CPU, Memory, Disk, Network | Live CPU, memory, disk and network activity with graphs; opens Activity Monitor on press |
 
 Each plugin's README covers what its key shows, what it needs, and how it works.
 
@@ -54,6 +55,7 @@ shared/           copied into every plugin as plugin/lib/
   streamdock.mjs  WebSocket to Control Deck, logging, show-only-what-changed key updates
   png.mjs         dependency-free PNG encoder/decoder and key tiles
   font.mjs        pixel font for keys drawn without the host's title text
+  draw.mjs        antialiased canvas and stroke font for keys drawn whole (Pomodoro, System Monitor)
   text.mjs        word-wrap for key titles
   paths.mjs       log, cache and state folders
 scripts/
