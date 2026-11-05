@@ -1,5 +1,7 @@
-// Spotify plugin: a play/pause key showing the album cover, and a next-track key.
+// Spotify plugin: a key showing the album cover (tap opens Spotify, hold plays/pauses, double tap
+// skips), and a next-track key.
 
+import { gestures } from './lib/gestures.mjs';
 import { createPlugin, sleep } from './lib/streamdock.mjs';
 import { SPOTIFY_BUNDLE, ensureCover, nextKey, nextTrack, playPause, readSpotify, spotifyKey } from './spotify.mjs';
 
@@ -38,20 +40,24 @@ async function press(command) {
   refresh();
 }
 
-for (const [uuid, keys, command] of [
-  [PLAY_ACTION, playKeys, playPause],
-  [NEXT_ACTION, nextKeys, nextTrack],
-]) {
-  p.action(uuid, {
-    willAppear: (ctx) => {
-      keys.add(ctx);
-      render();
-      refresh();
-    },
-    willDisappear: (ctx) => keys.delete(ctx),
-    keyDown: () => press(command),
-  });
-}
+const showing = (keys) => ({
+  willAppear: (ctx) => {
+    keys.add(ctx);
+    render();
+    refresh();
+  },
+  willDisappear: (ctx) => keys.delete(ctx),
+});
+
+p.action(PLAY_ACTION, {
+  ...showing(playKeys),
+  ...gestures({
+    tap: () => p.open('-b', SPOTIFY_BUNDLE),
+    longPress: () => press(playPause),
+    doubleTap: () => press(nextTrack),
+  }),
+});
+p.action(NEXT_ACTION, { ...showing(nextKeys), keyDown: () => press(nextTrack) });
 
 setInterval(refresh, 2000);
 p.connect();

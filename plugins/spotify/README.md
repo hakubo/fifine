@@ -1,16 +1,18 @@
 # Spotify
 
-Two keys: **Spotify** (album cover, play/pause) and **Spotify Next** (skip).
+Two keys: **Spotify** (album cover; press opens Spotify, hold plays/pauses, double tap skips) and **Spotify Next** (skip).
 
-| Key | Look | Meaning | Press |
-| --- | --- | --- | --- |
-| Spotify | Album cover | Playing | Pauses |
-| Spotify | Dimmed cover with a ▶ | Paused | Plays |
-| Spotify | Spotify icon | Running, cover still loading or the track has none | Play/pause |
-| Spotify | Grey Spotify icon | The Spotify desktop app isn't running | Opens Spotify |
-| Spotify Next | Green ⏭ | Playing | Next track |
-| Spotify Next | White ⏭ | Paused | Next track |
-| Spotify Next | Grey ⏭ | Spotify isn't running | Opens Spotify |
+| Key | Look | Meaning |
+| --- | --- | --- |
+| Spotify | Album cover | Playing |
+| Spotify | Dimmed cover with a ▶ | Paused |
+| Spotify | Spotify icon | Running, cover still loading or the track has none |
+| Spotify | Grey Spotify icon | The Spotify desktop app isn't running |
+| Spotify Next | Green ⏭ | Playing |
+| Spotify Next | White ⏭ | Paused |
+| Spotify Next | Grey ⏭ | Spotify isn't running |
+
+On the **Spotify** key, a press brings Spotify to the front (opening it if needed), holding it for half a second plays/pauses, and a double tap skips to the next track. A single press waits 0.3 s to rule out a double tap. Pressing **Spotify Next** skips. While Spotify isn't running, hold, double tap and Next all open it.
 
 ## How it works
 

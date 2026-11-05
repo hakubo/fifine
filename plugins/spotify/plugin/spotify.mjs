@@ -1,5 +1,6 @@
-// "Spotify" key: the current track's album cover; press to play/pause. Dimmed with a play
-// triangle while paused. "Spotify Next" key: skips to the next track.
+// "Spotify" key: the current track's album cover, dimmed with a play triangle while paused.
+// Press to open Spotify, hold to play/pause, double tap to skip. "Spotify Next" key: skips to the
+// next track.
 //
 // Everything goes through the Spotify desktop app's AppleScript dictionary, so there's no
 // Spotify login, developer app or Premium involved. macOS asks once whether Control Deck may
