@@ -95,7 +95,11 @@ export function encode(size, raw) {
 
 export const dataUrl = (png) => `data:image/png;base64,${png.toString('base64')}`;
 
-// Decodes an 8-bit, non-interlaced RGB or RGBA PNG (what `sips` writes) to { width, height, data: RGBA }.
+// bytes per pixel for each 8-bit PNG colour type decode() reads: grey, RGB, grey+alpha, RGBA
+const CHANNELS = { 0: 1, 2: 3, 4: 2, 6: 4 };
+
+// Decodes an 8-bit, non-interlaced grey, grey+alpha, RGB or RGBA PNG (what `sips` writes; a
+// monochrome app icon such as Notion's comes out grey+alpha) to { width, height, data: RGBA }.
 export function decode(png) {
   let width, height, type;
   const idat = [];
@@ -107,11 +111,11 @@ export function decode(png) {
       width = body.readUInt32BE(0);
       height = body.readUInt32BE(4);
       type = body[9];
-      if (body[8] !== 8 || (type !== 2 && type !== 6) || body[12]) throw new Error('unsupported PNG');
+      if (body[8] !== 8 || !CHANNELS[type] || body[12]) throw new Error('unsupported PNG');
     } else if (kind === 'IDAT') idat.push(body);
     o += len + 12;
   }
-  const bpp = type === 6 ? 4 : 3;
+  const bpp = CHANNELS[type];
   const stride = width * bpp;
   const raw = inflateSync(Buffer.concat(idat));
   const px = Buffer.alloc(height * stride);
@@ -134,8 +138,15 @@ export function decode(png) {
       px[y * stride + i] = v & 0xff;
     }
   }
-  if (bpp === 4) return { width, height, data: px };
+  if (type === 6) return { width, height, data: px };
   const data = Buffer.alloc(width * height * 4, 255);
-  for (let i = 0; i < width * height; i++) px.copy(data, i * 4, i * 3, i * 3 + 3);
+  for (let i = 0; i < width * height; i++) {
+    if (type === 2) px.copy(data, i * 4, i * 3, i * 3 + 3);
+    else {
+      const g = px[i * bpp];
+      data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = g;
+      if (type === 4) data[i * 4 + 3] = px[i * 2 + 1];
+    }
+  }
   return { width, height, data };
 }
