@@ -1,5 +1,5 @@
 // An app icon on a dark key with a red count badge in the top-right, like the Dock draws it.
-// Used by the Slack, Notion and Chrome keys.
+// Used by the Slack, Notion, Linear and Chrome keys.
 
 import { dataUrl, encode, hex } from './png.mjs';
 import { GLYPHS } from './font.mjs';
