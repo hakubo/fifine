@@ -53,11 +53,12 @@ The desktop app doesn't say which session it is showing, so "open" means the dec
 - Colours: red when a thread waits on an approval or question, blue while it runs, and green (instead of amber) when it finished and nobody has opened it since, in T3 Code or from the deck.
 - A thread drops off 12 hours after its last activity; subagent threads aren't shown.
 - Each key draws the repo name in large type, with the project's emoji above it if you picked one in T3 Code's project settings, and the thread title underneath.
+- Threads you settled or snoozed in T3 Code stay off the keys until they run or ask for something again.
 - Pressing the key opens the thread in T3 Code (`t3code://threads/<environment>/<thread>`).
 - An approval (command, file read, file edit, permission) works in two presses, like `claude rc` sessions: the first opens the thread and turns the key green with `Allow?`; the second, within 2 minutes and while T3 Code is in front, accepts it. Questions only open the thread.
 - While any T3 Session key is on the deck, Claude Code processes that T3 Code spawned are left off the Claude Session keys, so each thread has one key.
 
-How it works: `plugin/t3.mjs` connects to T3 Code's local server like its own web client. On first use it runs `~/.t3/bin/t3 auth session issue` for a 30-day token with the `orchestration:read` and `orchestration:operate` scopes (stored in `~/.claude/fifine/t3-token.json`, renewed a day before expiry or when refused). It subscribes to `orchestration.subscribeShell` for thread status and answers approvals with `orchestration.dispatchCommand`. This is T3 Code's internal protocol (orchestration protocol 2), so a T3 Code update can break it; check the log for `t3` lines. Revoke the token with `t3 auth session list` / `t3 auth session revoke <id>`.
+How it works: `plugin/t3.mjs` connects to T3 Code's local server like its own web client. On first use it runs `~/.t3/bin/t3 auth session issue` for a 30-day token with the `orchestration:read` and `orchestration:operate` scopes (stored in `~/.claude/fifine/t3-token.json`, renewed a day before expiry or when refused). It subscribes to `orchestration.subscribeShell` (without idle subagents and older settled threads) for thread status, pings the server every 30 seconds and reconnects when it goes quiet, and answers approvals with `orchestration.dispatchCommand`. This is T3 Code's internal protocol (orchestration protocol 2), so a T3 Code update can break it; check the log for `t3` lines. Revoke the token with `t3 auth session list` / `t3 auth session revoke <id>`.
 
 `scripts/t3-probe.mjs` prints what the server reports: `T3_TOKEN=<token> node plugins/agent-sessions/scripts/t3-probe.mjs [seconds]`.
 
