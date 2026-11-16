@@ -18,6 +18,12 @@ const TOKEN_FILE = join(homedir(), '.claude', 'fifine', 't3-token.json');
 const PROTOCOL = 2; // the server answers 426 to clients that don't declare orchestration protocol 2
 const RECENT_MS = 12 * 60 * 60 * 1000; // finished threads stay on the deck this long
 const RETRY_MS = 10_000;
+const CONNECT_TIMEOUT_MS = 15_000; // a server that is still starting can accept a socket and never answer
+const PING_MS = 30_000; // the server never pings, so a dead stream only shows when our Ping goes unanswered
+const SILENT_MS = 75_000;
+// T3 Code 0.1.9+: leave idle subagent children and older settled threads out of the snapshot
+// (609 threads and 0.6 s down to ~40 and 70 ms here). Older servers ignore the keys.
+const SHELL_OPTIONS = { omitIdleSubagents: true, omitOlderSettled: true };
 const ACTIVE = new Set(['preparing', 'queued', 'starting', 'running']);
 // Request kinds a single "allow" answers; questions (user_input, mcp-elicitation, …) only open.
 const APPROVABLE = { command: 'Command', 'file-read': 'Read file', 'file-change': 'Edit file', permission: 'Permission' };
@@ -29,6 +35,8 @@ let connected = false;
 let serverPid = null;
 let environmentId = null;
 let retry = null;
+let pinger = null;
+let lastHeard = 0;
 let nextId = 1;
 const calls = new Map(); // rpc id -> { resolve, timer }
 const threads = new Map(); // threadId -> thread shell
@@ -93,6 +101,7 @@ async function ticket(origin) {
       method: 'POST',
       headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json' },
       body: '{}',
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
     });
     if (res.ok) return (await res.json()).ticket;
     log('t3 ticket refused', res.status);
@@ -101,9 +110,12 @@ async function ticket(origin) {
   return null;
 }
 
-function reset() {
+// Threads stay on the deck through a reconnect (the next snapshot replaces them); they go only
+// when T3 Code itself is gone.
+function reset({ keepThreads = false } = {}) {
   connected = false;
-  threads.clear();
+  clearInterval(pinger);
+  if (!keepThreads) threads.clear();
   for (const { resolve, timer } of calls.values()) {
     clearTimeout(timer);
     resolve({ ok: false, error: 'disconnected' });
@@ -120,24 +132,39 @@ function scheduleRetry() {
 async function connect() {
   clearTimeout(retry);
   const runtime = readJson(join(USERDATA, 'server-runtime.json'));
-  if (!runtime?.origin || !runtime.pid || !alive(runtime.pid)) return scheduleRetry(); // T3 Code isn't running
+  if (!runtime?.origin || !runtime.pid || !alive(runtime.pid)) {
+    // T3 Code isn't running
+    if (threads.size) reset();
+    return scheduleRetry();
+  }
   serverPid = runtime.pid;
   try {
     environmentId = readFileSync(join(USERDATA, 'environment-id'), 'utf8').trim();
     const tk = await ticket(runtime.origin);
     if (!tk) return scheduleRetry();
     const url = `${runtime.origin.replace(/^http/, 'ws')}/ws?wsTicket=${encodeURIComponent(tk)}&orchestrationProtocol=${PROTOCOL}`;
-    ws = new WebSocket(url);
+    ws = new WebSocket(url, { handshakeTimeout: CONNECT_TIMEOUT_MS });
   } catch (e) {
     log('t3 connect failed', e.message);
     return scheduleRetry();
   }
+  const sock = ws;
   ws.on('open', () => {
     connected = true;
+    lastHeard = Date.now();
     log('t3 connected', runtime.origin);
-    rpc('orchestration.subscribeShell', {}, { stream: true });
+    rpc('orchestration.subscribeShell', SHELL_OPTIONS, { stream: true });
+    clearInterval(pinger);
+    pinger = setInterval(() => {
+      if (Date.now() - lastHeard > SILENT_MS) {
+        log('t3 server silent, reconnecting');
+        return sock.terminate();
+      }
+      send({ _tag: 'Ping' });
+    }, PING_MS);
   });
   ws.on('message', (data) => {
+    lastHeard = Date.now();
     let msgs;
     try {
       msgs = [].concat(JSON.parse(data.toString()));
@@ -148,8 +175,9 @@ async function connect() {
   });
   ws.on('close', (code) => {
     log('t3 socket closed', code);
+    if (ws !== sock) return; // an older socket; its replacement is already up
     ws = null;
-    reset();
+    reset({ keepThreads: true });
     scheduleRetry();
   });
   ws.on('error', (e) => log('t3 socket error', e.message));
@@ -238,6 +266,12 @@ function shellItem(item) {
   }
 }
 
+// T3 Code 0.1.9+ lets you settle a thread (it leaves the sidebar's list) or snooze it until a set
+// time; neither belongs on a key until it runs or asks for something again.
+function putAway(t, now) {
+  return t.settledOverride === 'settled' || ms(t.snoozedUntil) > now;
+}
+
 function statusOf(t) {
   if (t.pendingRuntimeRequest || t.activityRunStatus === 'waiting' || t.status === 'waiting') return 'attention';
   if (ACTIVE.has(t.status) || ACTIVE.has(t.activityRunStatus)) return 'working';
@@ -254,7 +288,7 @@ export function t3Sessions() {
   for (const t of threads.values()) {
     const status = statusOf(t);
     const lastActive = Math.max(ms(t.latestRunCompletedAt), ms(t.latestRunStartedAt), ms(t.latestRunRequestedAt), ms(t.latestUserMessageAt));
-    if (status !== 'attention' && status !== 'working' && now - lastActive > RECENT_MS) continue;
+    if (status !== 'attention' && status !== 'working' && (now - lastActive > RECENT_MS || putAway(t, now))) continue;
     const req = t.pendingRuntimeRequest;
     out.push({
       source: 't3',
