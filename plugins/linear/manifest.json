@@ -1,0 +1,57 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Linear",
+  "Description": "Linear keys: your unread inbox count, and your team's cycle progress.",
+  "Version": "0.1.0",
+  "Icon": "images/plugin",
+  "Category": "Linear",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.linear.badge",
+      "Name": "Linear",
+      "Tooltip": "The Linear icon with your unread inbox count. Tap opens Linear, hold opens the inbox.",
+      "Icon": "images/linear",
+      "States": [
+        {
+          "Image": "images/linear-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "PropertyInspectorPath": "pi/index.html"
+    },
+    {
+      "UUID": "com.jakubolek.fifine.linear.cycle",
+      "Name": "Linear Cycle",
+      "Tooltip": "Progress of your team's active Linear cycle and the days left. Press to open the cycle filtered to your issues.",
+      "Icon": "images/cycle",
+      "States": [
+        {
+          "Image": "images/cycle-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "PropertyInspectorPath": "pi/index.html",
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}

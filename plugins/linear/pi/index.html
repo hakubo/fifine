@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!-- Settings panel for the Linear keys, shown by Control Deck when one is selected.
+     Both keys share one Linear personal API key, which the plugin saves for all of them.
+     The Linear Cycle key also picks the team whose active cycle it shows. -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { margin: 0; padding: 8px 12px; background: transparent; color: #d8d8d8; font: 12px -apple-system, BlinkMacSystemFont, sans-serif; }
+    .row { display: flex; align-items: center; margin: 6px 0; }
+    label { width: 90px; flex: none; color: #969696; }
+    select, input { flex: 1; min-width: 0; height: 24px; box-sizing: border-box; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 6px; font: inherit; }
+    button { margin-left: 6px; height: 24px; background: #3d3d3d; color: #d8d8d8; border: 0; border-radius: 3px; padding: 0 8px; font: inherit; cursor: pointer; }
+    .note { margin: 4px 0 0 90px; color: #969696; }
+    .error { color: #ff6b6b; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <label for="key">API key</label>
+    <input id="key" type="password" placeholder="lin_api_…" autocomplete="off" />
+  </div>
+  <div class="row" id="teamRow" hidden>
+    <label for="team">Team</label>
+    <select id="team"><option value="">Loading…</option></select>
+    <button id="reload" title="Reload the team list">↻</button>
+  </div>
+  <div id="note" class="note"></div>
+  <div class="note">API key: Linear → Settings → Security &amp; access → Personal API keys (read access is enough; Linear Cycle needs write once, to create its "my issues" view). It's shared by all Linear keys.</div>
+
+  <script>
+    const CYCLE = 'com.jakubolek.fifine.linear.cycle';
+    let ws;
+    let uuid;
+    let action;
+    let settings = {};
+    let teams = [];
+    const $ = (id) => document.getElementById(id);
+    const send = (msg) => ws?.readyState === 1 && ws.send(JSON.stringify(msg));
+    const toPlugin = (payload) => send({ event: 'sendToPlugin', action, context: uuid, payload });
+
+    function showStatus(status) {
+      const note = $('note');
+      note.className = 'note';
+      if (status === 'none') note.textContent = action === CYCLE ? 'Needs an API key.' : "No API key: the key shows only Linear's Dock dot.";
+      else if (status === 'checking') note.textContent = 'Checking…';
+      else if (status.startsWith('error: ')) {
+        note.textContent = `Linear API: ${status.slice(7)}`;
+        note.className = 'note error';
+      } else note.textContent = `Connected: ${status.slice(4)}.`;
+    }
+
+    function fillTeams() {
+      const sel = $('team');
+      sel.innerHTML = '';
+      sel.add(new Option('Default (your first team)', ''));
+      if (settings.teamId && !teams.some((t) => t.id === settings.teamId)) sel.add(new Option(settings.teamName || settings.teamId, settings.teamId));
+      for (const t of [...teams].sort((a, b) => a.name.localeCompare(b.name))) sel.add(new Option(`${t.name} (${t.key})`, t.id));
+      sel.value = settings.teamId || '';
+    }
+
+    function save() {
+      send({ event: 'setSettings', context: uuid, payload: settings });
+      // also tell the plugin directly, in case the host doesn't echo didReceiveSettings
+      toPlugin({ settings });
+    }
+
+    $('key').addEventListener('change', (e) => {
+      const apiKey = e.target.value.trim();
+      e.target.value = '';
+      e.target.placeholder = apiKey ? 'Saved (paste to replace)' : 'lin_api_…';
+      showStatus(apiKey ? 'checking' : 'none');
+      toPlugin({ apiKey });
+      if (action === CYCLE && apiKey) setTimeout(() => toPlugin({ request: 'teams' }), 500);
+    });
+    $('team').addEventListener('change', (e) => {
+      const t = teams.find((x) => x.id === e.target.value);
+      settings = t ? { ...settings, teamId: t.id, teamName: t.name } : { ...settings, teamId: '', teamName: '' };
+      showStatus('checking');
+      save();
+    });
+    $('reload').addEventListener('click', () => toPlugin({ request: 'teams' }));
+
+    // Called by Control Deck (Stream Deck–compatible property inspector API).
+    function connectElgatoStreamDeckSocket(port, inUUID, registerEvent, _info, actionInfo) {
+      uuid = inUUID;
+      const info = JSON.parse(actionInfo || '{}');
+      action = info.action;
+      settings = info.payload?.settings || {};
+      $('teamRow').hidden = action !== CYCLE;
+      fillTeams();
+      ws = new WebSocket(`ws://127.0.0.1:${port}`);
+      ws.onopen = () => {
+        send({ event: registerEvent, uuid });
+        toPlugin({ request: action === CYCLE ? 'teams' : 'status' });
+      };
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'didReceiveSettings') {
+          settings = msg.payload?.settings || {};
+          fillTeams();
+        } else if (msg.event === 'sendToPropertyInspector') {
+          const { hasKey, status, teams: list } = msg.payload || {};
+          if (hasKey !== undefined) $('key').placeholder = hasKey ? 'Saved (paste to replace)' : 'lin_api_…';
+          if (status) showStatus(status);
+          if (Array.isArray(list)) {
+            teams = list;
+            fillTeams();
+          }
+        }
+      };
+    }
+    window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+    window.connectSocket = connectElgatoStreamDeckSocket;
+  </script>
+</body>
+</html>

@@ -9,6 +9,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | [Zoom Meeting](plugins/zoom) | Zoom | Counts down to your next Zoom meeting from macOS Calendar and joins it on press |
 | [Slack Badge](plugins/slack) | Slack | Shows Slack's unread badge and opens Slack |
 | [Notion](plugins/notion) | Notion | Shows your unread Notion Inbox count and opens Notion |
+| [Linear](plugins/linear) | Linear, Linear Cycle | Your unread inbox count (tap opens Linear, hold opens the inbox), and your team's cycle progress |
 | [Spotify](plugins/spotify) | Spotify, Spotify Next | Album cover; press opens Spotify, hold plays/pauses, double tap skips. Plus a skip key |
 | [Chrome Windows](plugins/chrome) | Chrome Windows | Shows how many Chrome windows are open and cycles through them on each press |
 | [Loxone Light](plugins/loxone-light) | Light Mood | Cycles a Loxone room's light moods and shows the active one |
@@ -21,7 +22,7 @@ Each plugin's README covers what its key shows, what it needs, and how it works.
 
 - macOS and the fifine Control Deck app
 - [Node.js](https://nodejs.org) 20 or later, to run the installer (Control Deck runs the plugins with its own Node)
-- Whatever the plugin talks to: Claude Code, T3 Code, Zoom, Slack, Notion, Spotify, Chrome or the `lox` CLI. Zoom also needs the Xcode command line tools (`xcode-select --install`).
+- Whatever the plugin talks to: Claude Code, T3 Code, Zoom, Slack, Notion, Linear, Spotify, Chrome or the `lox` CLI. Zoom also needs the Xcode command line tools (`xcode-select --install`).
 
 ## Install
 
@@ -56,10 +57,10 @@ plugins/<name>/
 shared/           copied into every plugin as plugin/lib/
   streamdock.mjs  WebSocket to Control Deck, logging, show-only-what-changed key updates
   png.mjs         dependency-free PNG encoder/decoder and key tiles
-  badge.mjs       an app icon with a red count badge (Slack, Notion, Chrome)
+  badge.mjs       an app icon with a red count badge (Slack, Notion, Linear, Chrome)
   font.mjs        pixel font for keys drawn without the host's title text
   gestures.mjs    tap, double tap and long press from keyDown/keyUp (Spotify)
-  draw.mjs        antialiased canvas and stroke font for keys drawn whole (Pomodoro, System Monitor)
+  draw.mjs        antialiased canvas and stroke font for keys drawn whole (Pomodoro, System Monitor, Linear Cycle)
   text.mjs        word-wrap for key titles
   paths.mjs       log, cache and state folders
 scripts/
@@ -68,7 +69,7 @@ scripts/
 
 Plugins write logs to `~/Library/Logs/fifine/<plugin>.log`, caches to `~/Library/Caches/fifine/` and state worth keeping to `~/Library/Application Support/fifine/`. The Claude-related plugins keep their state in `~/.claude/fifine/`.
 
-Icons for Zoom, Slack, Notion, Spotify and Chrome are taken from the installed apps at build time and aren't part of this repo. Without the app, the key gets a plain coloured tile.
+Icons for Zoom, Slack, Notion, Linear, Spotify and Chrome are taken from the installed apps at build time and aren't part of this repo. Without the app, the key gets a plain coloured tile.
 
 ## Adding a plugin
 
