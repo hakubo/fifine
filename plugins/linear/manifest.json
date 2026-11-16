@@ -24,7 +24,7 @@
     {
       "UUID": "com.jakubolek.fifine.linear.badge",
       "Name": "Linear",
-      "Tooltip": "The Linear icon with your unread inbox count. Tap opens Linear, hold opens the inbox.",
+      "Tooltip": "The Linear icon with your unread inbox count. Tap opens Linear. Hold opens the selected Linear issue or link, or the inbox.",
       "Icon": "images/linear",
       "States": [
         {

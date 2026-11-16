@@ -9,7 +9,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | [Zoom Meeting](plugins/zoom) | Zoom | Counts down to your next Zoom meeting from macOS Calendar and joins it on press |
 | [Slack Badge](plugins/slack) | Slack | Shows Slack's unread badge and opens Slack |
 | [Notion](plugins/notion) | Notion | Shows your unread Notion Inbox count and opens Notion |
-| [Linear](plugins/linear) | Linear, Linear Cycle | Your unread inbox count (tap opens Linear, hold opens the inbox), and your team's cycle progress |
+| [Linear](plugins/linear) | Linear, Linear Cycle | Your unread inbox count (tap opens Linear, hold opens the selected issue or the inbox), and your team's cycle progress |
 | [Spotify](plugins/spotify) | Spotify, Spotify Next | Album cover; press opens Spotify, hold plays/pauses, double tap skips. Plus a skip key |
 | [Chrome Windows](plugins/chrome) | Chrome Windows | Shows how many Chrome windows are open and cycles through them on each press |
 | [Loxone Light](plugins/loxone-light) | Light Mood | Cycles a Loxone room's light moods and shows the active one |

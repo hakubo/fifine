@@ -48,3 +48,9 @@ export async function listTeams(apiKey) {
   const data = await gql(apiKey, '{ viewer { teams { nodes { id key name } } } }');
   return data.error ? data : data.viewer.teams.nodes;
 }
+
+// Every team key in the workspace (ENG, OPS, ...): [key], or { error }.
+export async function listTeamKeys(apiKey) {
+  const data = await gql(apiKey, '{ teams(first: 250) { nodes { key } } }');
+  return data.error ? data : data.teams.nodes.map((t) => t.key);
+}

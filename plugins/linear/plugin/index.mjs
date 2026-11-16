@@ -1,13 +1,14 @@
 // Linear plugin:
-//   Linear        the Linear icon with the unread inbox count; tap opens Linear, hold opens the inbox
+//   Linear        the Linear icon with the unread inbox count; tap opens Linear, hold opens the
+//                 selected Linear link or issue id, or the inbox when nothing like that is selected
 //   Linear Cycle  a team's active cycle progress; tap opens the cycle filtered to my issues
 // Both read Linear's API with one shared personal API key (api.mjs), set in either key's panel.
 
-import { listTeams, loadApiKey, saveApiKey } from './api.mjs';
+import { listTeamKeys, listTeams, loadApiKey, saveApiKey } from './api.mjs';
 import { cycleKey, cycleUrl, myCycleView, readCycle, viewUrl } from './cycle.mjs';
 import { gestures } from './lib/gestures.mjs';
 import { createPlugin } from './lib/streamdock.mjs';
-import { LINEAR_BUNDLE, inboxUrl, lastWorkspace, linearKey, readDockBadge, readInbox } from './linear.mjs';
+import { LINEAR_BUNDLE, inboxUrl, lastWorkspace, linearKey, readDockBadge, readInbox, readSelection, ticketUrl } from './linear.mjs';
 
 const BADGE_ACTION = 'com.jakubolek.fifine.linear.badge';
 const CYCLE_ACTION = 'com.jakubolek.fifine.linear.cycle';
@@ -27,6 +28,7 @@ function setApiKey(next) {
   saveApiKey(apiKey);
   p.log('api key', apiKey ? 'set' : 'cleared');
   inbox = null;
+  teamKeys = null;
   cycles.clear();
   refreshBadge({ force: true });
   refreshCycles({ force: true });
@@ -106,13 +108,38 @@ function setBadgeSettings(ctx, settings = {}) {
 
 const currentWorkspace = () => workspace || lastWorkspace();
 
+// The workspace's team keys, so a selected "UTF-8" isn't taken for an issue id. Read once an hour.
+let teamKeys = null; // { keys, at }
+async function currentTeamKeys() {
+  if (!apiKey) return null;
+  if (!teamKeys || Date.now() - teamKeys.at > 60 * 60 * 1000) {
+    const keys = await listTeamKeys(apiKey);
+    if (keys.error) p.log('team keys failed', keys.error);
+    else teamKeys = { keys, at: Date.now() };
+  }
+  return teamKeys?.keys || null;
+}
+
+// Hold: the Linear link or issue id selected in the frontmost app, else the inbox.
+async function openSelectedOrInbox() {
+  const [selection, keys] = await Promise.all([readSelection(), currentTeamKeys()]);
+  if (selection.error) p.log('reading the selection failed', selection.error);
+  const ticket = ticketUrl(selection.text, { workspace: currentWorkspace(), teamKeys: keys });
+  if (ticket) {
+    p.log('opening selected', ticket);
+    return p.open(ticket);
+  }
+  await p.open(inboxUrl(currentWorkspace()));
+  setTimeout(() => refreshBadge({ force: true }), 3000);
+}
+
 p.action(BADGE_ACTION, {
   willAppear: (ctx, msg) => setBadgeSettings(ctx, msg.payload?.settings),
   didReceiveSettings: (ctx, msg) => setBadgeSettings(ctx, msg.payload?.settings),
   willDisappear: (ctx) => badgeKeys.delete(ctx),
   ...gestures({
     tap: () => p.open('-b', LINEAR_BUNDLE),
-    longPress: () => p.open(inboxUrl(currentWorkspace())).then(() => setTimeout(() => refreshBadge({ force: true }), 3000)),
+    longPress: openSelectedOrInbox,
   }),
   sendToPlugin: (ctx, msg) => fromPanel(ctx, msg, BADGE_ACTION, setBadgeSettings),
 });

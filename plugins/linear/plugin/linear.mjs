@@ -49,6 +49,33 @@ export function lastWorkspace() {
 // The inbox in the desktop app.
 export const inboxUrl = (workspace) => (workspace ? `linear://${workspace}/inbox` : 'linear://inbox');
 
+// The text selected in the frontmost app ('' when nothing is), via selection.js.
+const SELECTION = fileURLToPath(new URL('./selection.js', import.meta.url));
+export function readSelection() {
+  return new Promise((resolve) => {
+    execFile('/usr/bin/osascript', ['-l', 'JavaScript', SELECTION], { timeout: 5000 }, (err, stdout, stderr) =>
+      resolve(err ? { error: String(stderr || err.message).trim() } : { text: String(stdout).trim() }),
+    );
+  });
+}
+
+const LINK = /https?:\/\/linear\.app\/([\w-]+\/[^\s<>"'`)\]]+)/i;
+const ISSUE_ID = /(?<![A-Za-z0-9])([A-Za-z][A-Za-z0-9]{0,9})-(\d{1,7})(?![A-Za-z0-9])/g;
+
+// The desktop-app URL for a Linear link or issue id (ENG-123, eng-123 in a branch name) in text,
+// or null. teamKeys, when known, limits ids to real teams so UTF-8 or ISO-8601 don't count.
+export function ticketUrl(text, { workspace, teamKeys } = {}) {
+  if (!text) return null;
+  const link = text.match(LINK);
+  if (link) return `linear://${link[1].replace(/[.,;:!?]+$/, '')}`;
+  const teams = teamKeys && new Set(teamKeys.map((k) => k.toUpperCase()));
+  for (const [, key, number] of text.matchAll(ISSUE_ID)) {
+    const id = `${key.toUpperCase()}-${number}`;
+    if (!teams || teams.has(key.toUpperCase())) return workspace ? `linear://${workspace}/issue/${id}` : `linear://issue/${id}`;
+  }
+  return null;
+}
+
 const images = new Map();
 
 // What the key shows: { image, title }. label: '' | '•' | count. Everything is in the image.
