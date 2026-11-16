@@ -1,0 +1,40 @@
+{
+  "SDKVersion": 1,
+  "Author": "Jakub Olek",
+  "Name": "Notion",
+  "Description": "The Notion icon with your unread Inbox count; press to open Notion.",
+  "Version": "0.1.0",
+  "Icon": "images/plugin",
+  "Category": "Notion",
+  "CategoryIcon": "images/category",
+  "CodePathMac": "plugin/index.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.jakubolek.fifine.notion.badge",
+      "Name": "Notion",
+      "Tooltip": "The Notion icon with your unread Inbox count. Press to open Notion.",
+      "Icon": "images/notion",
+      "States": [
+        {
+          "Image": "images/notion-key",
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false
+    }
+  ]
+}
