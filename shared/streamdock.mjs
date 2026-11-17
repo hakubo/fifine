@@ -42,7 +42,10 @@ export function createPlugin(name) {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   }
 
-  const lastSent = new Map(); // context -> { image, title } last pushed to the device
+  const lastSent = new Map(); // context -> { image, title, at } last pushed to the device
+  // Control Deck can also blank keys without telling the plugin (seen after the deck slept), so an
+  // unchanged key is still resent once this old; otherwise it would stay black until it changed.
+  const RESEND_MS = 60_000;
 
   // Control Deck blanks every key whenever it re-shows a page, including on each app focus change
   // when profiles follow the frontmost app. The last picture is kept across willDisappear so a
@@ -52,15 +55,18 @@ export function createPlugin(name) {
     if (!last) return;
     send({ event: 'setImage', context: ctx, payload: { image: last.image, target: 0 } });
     send({ event: 'setTitle', context: ctx, payload: { title: last.title, target: 0 } });
+    last.at = Date.now();
   }
 
   // Shows { image, title } on one key, or on every key in an iterable of contexts.
   function show(ctxs, { image, title }) {
+    const now = Date.now();
     for (const ctx of typeof ctxs === 'string' ? [ctxs] : ctxs) {
       const last = lastSent.get(ctx) || {};
-      if (last.image !== image) send({ event: 'setImage', context: ctx, payload: { image, target: 0 } });
-      if (last.title !== title) send({ event: 'setTitle', context: ctx, payload: { title, target: 0 } });
-      lastSent.set(ctx, { image, title });
+      const stale = now - (last.at || 0) > RESEND_MS;
+      if (stale || last.image !== image) send({ event: 'setImage', context: ctx, payload: { image, target: 0 } });
+      if (stale || last.title !== title) send({ event: 'setTitle', context: ctx, payload: { title, target: 0 } });
+      lastSent.set(ctx, { image, title, at: stale ? now : last.at });
     }
   }
 
@@ -82,6 +88,12 @@ export function createPlugin(name) {
       try {
         msg = JSON.parse(data.toString());
       } catch {
+        return;
+      }
+      // a deck that reconnects or wakes comes back blank, and no willAppear follows
+      if (msg.event === 'deviceDidConnect' || msg.event === 'systemDidWakeUp') {
+        log(msg.event, msg.device || '');
+        for (const ctx of lastSent.keys()) repaint(ctx);
         return;
       }
       const handlers = actions.get(msg.action);
