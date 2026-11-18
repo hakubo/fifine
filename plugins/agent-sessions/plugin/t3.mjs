@@ -16,7 +16,6 @@ const USERDATA = join(homedir(), '.t3', 'userdata');
 const T3_CLI = join(homedir(), '.t3', 'bin', 't3');
 const TOKEN_FILE = join(homedir(), '.claude', 'fifine', 't3-token.json');
 const PROTOCOL = 2; // the server answers 426 to clients that don't declare orchestration protocol 2
-const RECENT_MS = 12 * 60 * 60 * 1000; // finished threads stay on the deck this long
 const RETRY_MS = 10_000;
 const CONNECT_TIMEOUT_MS = 15_000; // a server that is still starting can accept a socket and never answer
 const PING_MS = 30_000; // the server never pings, so a dead stream only shows when our Ping goes unanswered
@@ -235,6 +234,7 @@ function handle(msg) {
 function putThread(t) {
   // subagent threads belong to their parent's key
   if (t.lineage?.relationshipToParent === 'subagent') return;
+  if (t.archivedAt || t.deletedAt) return threads.delete(t.id);
   if (!firstSeen.has(t.id)) firstSeen.set(t.id, Date.now() + firstSeen.size);
   threads.set(t.id, t);
 }
@@ -281,14 +281,16 @@ function statusOf(t) {
   return 'idle';
 }
 
-// Threads shaped like the plugin's Claude sessions. Idle threads drop off after RECENT_MS.
+// Threads shaped like the plugin's Claude sessions. Every thread still in T3 Code's sidebar list
+// gets a key, however long it has been idle; settled and snoozed ones stay off until they run or
+// ask for something again.
 export function t3Sessions() {
   const now = Date.now();
   const out = [];
   for (const t of threads.values()) {
     const status = statusOf(t);
     const lastActive = Math.max(ms(t.latestRunCompletedAt), ms(t.latestRunStartedAt), ms(t.latestRunRequestedAt), ms(t.latestUserMessageAt));
-    if (status !== 'attention' && status !== 'working' && (now - lastActive > RECENT_MS || putAway(t, now))) continue;
+    if (status !== 'attention' && status !== 'working' && putAway(t, now)) continue;
     const req = t.pendingRuntimeRequest;
     out.push({
       source: 't3',

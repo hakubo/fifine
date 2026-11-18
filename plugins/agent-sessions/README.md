@@ -51,7 +51,8 @@ The desktop app doesn't say which session it is showing, so "open" means the dec
 **T3 Session** keys work like Claude Session keys, for T3 Code threads (Codex threads included) while the T3 Code desktop app is running. The overflow key (`+N more`) opens T3 Code.
 
 - Colours: red when a thread waits on an approval or question, blue while it runs, and green (instead of amber) when it finished and nobody has opened it since, in T3 Code or from the deck.
-- A thread drops off 12 hours after its last activity; subagent threads aren't shown.
+- Every thread in T3 Code's sidebar list gets a key, however long it has been idle; subagent threads aren't shown.
+- Keys are ordered by what needs you: threads waiting on you first, then finished ones you haven't opened, then running, then idle (most recently active first within each). When there are more threads than keys, the last key shows `+N more`.
 - Each key draws the repo name in large type, with the project's emoji above it if you picked one in T3 Code's project settings, and the thread title underneath.
 - Threads you settled or snoozed in T3 Code stay off the keys until they run or ask for something again.
 - Pressing the key opens the thread in T3 Code (`t3code://threads/<environment>/<thread>`).
