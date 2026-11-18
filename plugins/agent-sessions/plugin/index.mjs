@@ -205,11 +205,13 @@ function loadSessions() {
   return out;
 }
 
-// When every session has its own key, keep them in a stable order (oldest first) so keys
-// don't jump around; when there are more sessions than keys, the most urgent ones win.
-function orderSessions(list, slots) {
-  if (list.length <= slots) return list.sort((a, b) => a.startedAt - b.startedAt || a.sessionId.localeCompare(b.sessionId));
-  return list.sort((a, b) => STATUS[a.status].rank - STATUS[b.status].rank || b.updatedAt - a.updatedAt);
+// Claude Session keys: when every session has its own key, keep them in a stable order (oldest
+// first) so keys don't jump around; when there are more sessions than keys, the most urgent win.
+// T3 Session keys always put the threads that need you first (attention, then finished, then
+// working, then idle), most recently active first within each.
+function orderSessions(list, slots, { urgentFirst = false } = {}) {
+  if (!urgentFirst && list.length <= slots) return list.sort((a, b) => a.startedAt - b.startedAt || a.sessionId.localeCompare(b.sessionId));
+  return list.sort((a, b) => STATUS[a.status].rank - STATUS[b.status].rank || b.updatedAt - a.updatedAt || a.sessionId.localeCompare(b.sessionId));
 }
 
 // ---- keys
@@ -245,7 +247,7 @@ function render() {
 
 function renderGroup(g) {
   const ctxs = orderedContexts(g);
-  const sessions = (g.sessions = orderSessions(g.sessions, ctxs.length));
+  const sessions = (g.sessions = orderSessions(g.sessions, ctxs.length, { urgentFirst: g === groups.t3 }));
   const overflow = sessions.length > ctxs.length ? sessions.length - ctxs.length + 1 : 0;
   ctxs.forEach((ctx, i) => {
     let image;
