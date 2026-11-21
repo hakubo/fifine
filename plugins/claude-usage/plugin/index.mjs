@@ -1,11 +1,15 @@
-// Claude Usage plugin: one key with the account's 5-hour and 7-day rate-limit usage.
+// AI Usage plugin: one key with Claude's and Antigravity's 5-hour and weekly usage, read from T3
+// Code's provider cache. Tap opens T3 Code, double tap starts a new T3 thread.
 
-import { mkdirSync, watch } from 'node:fs';
-import { dirname } from 'node:path';
+import { watch } from 'node:fs';
+import { gestures } from './lib/gestures.mjs';
 import { createPlugin } from './lib/streamdock.mjs';
-import { USAGE_FILE, USAGE_URL, readUsage, usageKey } from './usage.mjs';
+import { PROVIDERS, T3_CACHE_DIR, readUsage, usageKey } from './usage.mjs';
 
+// kept from the Claude-only key, so keys already on the deck carry over
 const ACTION = 'com.jakubolek.fifine.claude-usage.limits';
+const T3_BUNDLE = 'com.t3tools.t3code';
+const NEW_THREAD_URL = 't3code://new';
 
 const p = createPlugin('claude-usage');
 const keys = new Set();
@@ -20,20 +24,24 @@ p.action(ACTION, {
     render();
   },
   willDisappear: (ctx) => keys.delete(ctx),
-  keyUp: () => p.open(USAGE_URL),
+  ...gestures({
+    tap: () => p.open('-b', T3_BUNDLE),
+    doubleTap: () => p.open(NEW_THREAD_URL),
+  }),
 });
 
-// redraw when the fifine-usage Claude Code plugin writes a new reading
+// redraw when T3 rewrites a provider's cache file
+const FILES = new Set(PROVIDERS.map((name) => `${name}.json`));
 let pending;
 try {
-  mkdirSync(dirname(USAGE_FILE), { recursive: true });
-  watch(dirname(USAGE_FILE), (_e, file) => {
-    if (file && !USAGE_FILE.endsWith(file)) return;
+  watch(T3_CACHE_DIR, (_e, file) => {
+    if (file && !FILES.has(file)) return;
     clearTimeout(pending);
     pending = setTimeout(render, 50);
   });
 } catch (e) {
+  // no T3 cache yet (T3 not installed or never run): the 30 s redraw still picks it up later
   p.log('watch failed', e.message);
 }
-setInterval(render, 30_000); // reset countdown, and windows that reset with no new reading
+setInterval(render, 30_000); // reset countdowns, windows that reset, and readings going stale
 p.connect();

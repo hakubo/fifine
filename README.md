@@ -5,7 +5,7 @@ Plugins for the [fifine](https://fifinemicrophone.com) Control Deck app (a Strea
 | Plugin | Keys | What it does |
 | --- | --- | --- |
 | [Agent Sessions](plugins/agent-sessions) | Claude Session, T3 Session | Shows your Claude Code sessions and T3 Code threads, flags the ones waiting for you, opens them on press, and approves a permission prompt in two presses |
-| [Claude Usage](plugins/claude-usage) | Claude Usage | Shows how much of your Claude plan's 5-hour and 7-day limits you've used |
+| [AI Usage](plugins/claude-usage) | AI Usage | Claude and Antigravity 5-hour and weekly limits on one key, read from T3 Code |
 | [Zoom Meeting](plugins/zoom) | Zoom | Counts down to your next Zoom meeting from macOS Calendar and joins it on press |
 | [Slack Badge](plugins/slack) | Slack | Shows Slack's unread badge and opens Slack |
 | [Notion](plugins/notion) | Notion | Shows your unread Notion Inbox count and opens Notion |
@@ -41,7 +41,7 @@ Run the same command again to update. To remove plugins:
 node scripts/install.mjs spotify --uninstall
 ```
 
-Agent Sessions and Claude Usage also change `~/.claude/settings.json` (hooks, and a Claude Code plugin folder). The installer backs it up to `settings.json.bak-fifine` first and undoes its changes on `--uninstall`. Both point at files in this checkout, so keep the checkout where it is.
+Agent Sessions also changes `~/.claude/settings.json` (hooks). The installer backs it up to `settings.json.bak-fifine` first and undoes its changes on `--uninstall`. The hooks point at files in this checkout, so keep the checkout where it is. Installing AI Usage removes the Claude Code plugin folder older versions of it added there.
 
 `npm run build` builds every plugin into `dist/` without installing anything.
 

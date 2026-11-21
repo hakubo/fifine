@@ -1,13 +1,14 @@
-// "Claude Usage" key: the account's 5-hour and 7-day rate-limit usage, as the fifine-usage Claude Code
-// plugin (../claude-plugin/) last recorded it in ~/.claude/fifine/usage.json.
+// "AI Usage" key: Claude (left) and Antigravity (right) rate-limit usage, as T3 Code last cached it
+// in ~/.t3/caches/<provider>.json (`usageLimits`). T3 refreshes those files every few minutes
+// while it runs.
 //
-// The key is drawn whole into the image (text included), so lines and bars sit exactly where we put
-// them; the host's title is left empty.
+//    ( 43 )   ( 88 )      outer ring: 5-hour window; inner ring: weekly
+//   ▬ 2h14   ▬ 1h20       5-hour reset (thick tick, like the outer ring)
+//   - 3d4h   - 5d2h       weekly reset (thin tick, like the inner ring)
 //
-//   5h 43%    2h14m      label, percent, time to reset
-//   (=====-------)       rounded bar
-//   7d 23%     3d4h
-//   (===---------)
+// The middle number is the 5-hour percent, or the weekly one once that is the bigger worry.
+// Antigravity has a few pools (Claude & GPT, Gemini, …); each ring shows the most-used one.
+// The key is drawn whole into the image; the host's title stays empty.
 
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -15,22 +16,25 @@ import { join } from 'node:path';
 import { GLYPHS } from './lib/font.mjs';
 import { dataUrl, encode, hex } from './lib/png.mjs';
 
-export const USAGE_FILE = join(homedir(), '.claude', 'fifine', 'usage.json');
-export const USAGE_URL = 'https://claude.ai/settings/usage';
+export const T3_CACHE_DIR = join(homedir(), '.t3', 'caches');
+// left to right on the key
+export const PROVIDERS = ['claudeAgent', 'antigravity'];
+// older than this and T3 has probably stopped refreshing: the key greys out
+const STALE_MS = 30 * 60 * 1000;
 
 const SIZE = 144;
-const PAD_X = 14;
 const BG = '#1b1b1f';
 const TRACK = '#2c2c33';
 const DIM = '#8a8a96';
 const TEXT = '#f2f2f5';
 const FONT_SCALE = 2;
-// top of each row: text line, then its bar
-const LAYOUT = [
-  { text: 30, bar: 52 },
-  { text: 78, bar: 100 },
-];
-const BAR_HEIGHT = 12;
+const GLYPH_H = 7 * FONT_SCALE;
+const COLUMNS = [36, 108]; // ring centres
+const RING_Y = 54;
+const OUTER = { r: 28, width: 7 };
+const INNER = { r: 18, width: 4 };
+const ROWS = [96, 116]; // top of the 5-hour and weekly reset lines
+const SPAN = 32; // reset line runs cx-SPAN .. cx+SPAN
 
 // orange when getting close, red when nearly out
 const LEVELS = [
@@ -40,29 +44,49 @@ const LEVELS = [
 ];
 const levelColor = (percent) => LEVELS.find((l) => percent >= l.from).color;
 
-export function readUsage() {
+function readCache(provider) {
   try {
-    return JSON.parse(readFileSync(USAGE_FILE, 'utf8'));
+    return JSON.parse(readFileSync(join(T3_CACHE_DIR, `${provider}.json`), 'utf8')).usageLimits ?? null;
   } catch {
     return null;
   }
 }
 
-// A window whose reset time has passed is back to 0%, even before Claude Code reports again.
-function current(w, now) {
-  if (!w) return null;
-  if (w.resetsAt && w.resetsAt <= now) return { percent: 0, resetsAt: null };
-  return w;
+export const readUsage = () => Object.fromEntries(PROVIDERS.map((p) => [p, readCache(p)]));
+
+// The most-used window of one kind ("session" = 5-hour, "weekly"), as { percent, resetsAt }.
+// A window whose reset time has passed is back to 0%, even before T3 checks again.
+function worst(limits, kind, now) {
+  const windows = (limits?.windows ?? [])
+    .filter((w) => w.kind === kind && typeof w.usedPercent === 'number')
+    .map((w) => {
+      const resetsAt = w.resetsAt ? Date.parse(w.resetsAt) : null;
+      return resetsAt && resetsAt <= now ? { percent: 0, resetsAt: null } : { percent: w.usedPercent, resetsAt };
+    });
+  if (!windows.length) return null;
+  return windows.reduce((a, b) => (b.percent > a.percent ? b : a));
+}
+
+// One provider's two rings, or null when T3 has no reading for it.
+export function summarize(limits, now = Date.now()) {
+  if (!limits) return null;
+  const session = worst(limits, 'session', now);
+  const weekly = worst(limits, 'weekly', now);
+  if (!session && !weekly) return null;
+  const checkedAt = Date.parse(limits.checkedAt ?? '');
+  return { session, weekly, stale: !(now - checkedAt < STALE_MS) };
 }
 
 function until(ms, now) {
-  if (!ms) return '';
+  if (!ms) return '–';
   const minutes = Math.max(0, Math.round((ms - now) / 60_000));
   const d = Math.floor(minutes / 1440);
   const h = Math.floor((minutes % 1440) / 60);
   const m = minutes % 60;
+  // at most 5 glyphs, so a line fits half a key: 6d23h, 3h20, 19h, 42m
   if (d > 0) return h ? `${d}d${h}h` : `${d}d`;
-  if (h > 0) return `${h}h${String(m).padStart(2, '0')}m`;
+  if (h >= 10) return `${h}h`;
+  if (h > 0) return `${h}h${String(m).padStart(2, '0')}`;
   return `${m}m`;
 }
 
@@ -78,6 +102,19 @@ function canvas() {
     if (x < 0 || y < 0 || x >= SIZE || y >= SIZE || alpha <= 0) return;
     const o = (y * SIZE + x) * 3;
     for (let k = 0; k < 3; k++) px[o + k] = px[o + k] * (1 - alpha) + rgb[k] * alpha;
+  };
+  // Paints every pixel in the box by how many of its 4x4 samples `paint(x, y)` claims for each colour.
+  const supersample = (x0, y0, x1, y1, paint) => {
+    for (let y = Math.floor(y0); y < Math.ceil(y1); y++)
+      for (let x = Math.floor(x0); x < Math.ceil(x1); x++) {
+        const hits = new Map();
+        for (let sy = 0; sy < 4; sy++)
+          for (let sx = 0; sx < 4; sx++) {
+            const c = paint(x + (sx + 0.5) / 4, y + (sy + 0.5) / 4);
+            if (c) hits.set(c, (hits.get(c) ?? 0) + 1);
+          }
+        for (const [c, n] of hits) blend(x, y, hex(c), n / 16);
+      }
   };
   return {
     text(x, y, text, color) {
@@ -96,32 +133,33 @@ function canvas() {
         x += (glyph[0].length + 1) * FONT_SCALE;
       }
     },
-    // A pill from x0 to x1, filled with `color` up to fillTo; edges antialiased by 4x4 supersampling.
-    bar(x0, x1, y0, height, fillTo, color, track) {
-      const fill = hex(color);
-      const back = hex(track);
-      const radius = height / 2;
-      const inside = (sx, sy) => {
-        const cx = Math.max(x0 + radius - sx, 0, sx - (x1 - radius));
-        const cy = sy - (y0 + radius);
-        return cx * cx + cy * cy <= radius * radius;
-      };
-      for (let y = y0; y < y0 + height; y++) {
-        for (let x = x0; x < x1; x++) {
-          let onFill = 0;
-          let onBack = 0;
-          for (let sy = 0; sy < 4; sy++)
-            for (let sx = 0; sx < 4; sx++) {
-              const fx = x + (sx + 0.5) / 4;
-              const fy = y + (sy + 0.5) / 4;
-              if (!inside(fx, fy)) continue;
-              if (fx < fillTo) onFill++;
-              else onBack++;
-            }
-          blend(x, y, back, onBack / 16);
-          blend(x, y, fill, onFill / 16);
+    // A ring track with a clockwise arc from 12 o'clock covering `percent`, with round ends.
+    ring(cx, cy, r, width, percent, color) {
+      const half = width / 2;
+      const p = Math.max(0, Math.min(100, percent)) / 100;
+      const end = p * 2 * Math.PI;
+      const cap = (a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+      const [sx, sy] = cap(0);
+      const [ex, ey] = cap(end);
+      const near = (x, y, px2, py2) => (x - px2) ** 2 + (y - py2) ** 2 <= half * half;
+      supersample(cx - r - half, cy - r - half, cx + r + half, cy + r + half, (x, y) => {
+        const dist = Math.hypot(x - cx, y - cy);
+        const onBand = Math.abs(dist - r) <= half;
+        if (p > 0) {
+          let a = Math.atan2(x - cx, cy - y);
+          if (a < 0) a += 2 * Math.PI;
+          if ((onBand && (p >= 1 || a <= end)) || near(x, y, sx, sy) || near(x, y, ex, ey)) return color;
         }
-      }
+        return onBand ? TRACK : null;
+      });
+    },
+    // a short pill, as thick as the ring whose reset time it labels
+    tick(x, cy, length, height, color) {
+      const r = height / 2;
+      supersample(x, cy - r, x + length, cy + r, (px2, py2) => {
+        const dx = Math.max(x + r - px2, 0, px2 - (x + length - r));
+        return dx * dx + (py2 - cy) ** 2 <= r * r ? color : null;
+      });
     },
     png() {
       const raw = Buffer.alloc(SIZE * (SIZE * 3 + 1));
@@ -132,17 +170,33 @@ function canvas() {
   };
 }
 
-function drawRow(c, { text: ty, bar: by }, label, w, now) {
-  const percent = w ? Math.round(w.percent) : null;
-  const color = percent === null ? DIM : levelColor(percent);
-  c.text(PAD_X, ty, label, DIM);
-  const value = percent === null ? '–' : `${percent}%`;
-  c.text(PAD_X + textWidth(`${label} `) + FONT_SCALE, ty, value, percent !== null && percent >= 70 ? color : TEXT);
-  const reset = until(w?.resetsAt, now);
-  if (reset) c.text(SIZE - PAD_X - textWidth(reset), ty, reset, DIM);
-  const x1 = SIZE - PAD_X;
-  const fillTo = PAD_X + ((x1 - PAD_X) * Math.max(0, Math.min(100, w?.percent ?? 0))) / 100;
-  c.bar(PAD_X, x1, by, BAR_HEIGHT, fillTo, color, TRACK);
+// What one column shows, as plain values (also the cache key for the image).
+function column(summary, now) {
+  if (!summary) return { center: '–', centerColor: DIM, rings: [0, 0], ringColors: [DIM, DIM], lines: [['–', DIM], ['–', DIM]] };
+  const { session, weekly, stale } = summary;
+  const pct = (w) => (w ? Math.round(w.percent) : 0);
+  const tone = (w) => (stale || !w ? DIM : levelColor(pct(w)));
+  // the weekly limit takes the middle once it is the closer one to running out
+  const headline = weekly && pct(weekly) >= 70 && pct(weekly) > pct(session) ? weekly : session ?? weekly;
+  const hot = (w) => !stale && w && pct(w) >= 70;
+  return {
+    center: headline ? String(pct(headline)) : '–',
+    centerColor: stale ? DIM : hot(headline) ? levelColor(pct(headline)) : TEXT,
+    rings: [pct(session), pct(weekly)],
+    ringColors: [tone(session), tone(weekly)],
+    lines: [session, weekly].map((w) => [until(w?.resetsAt, now), hot(w) ? levelColor(pct(w)) : DIM]),
+  };
+}
+
+function drawColumn(c, cx, col) {
+  c.ring(cx, RING_Y, OUTER.r, OUTER.width, col.rings[0], col.ringColors[0]);
+  c.ring(cx, RING_Y, INNER.r, INNER.width, col.rings[1], col.ringColors[1]);
+  c.text(cx - textWidth(col.center) / 2 + FONT_SCALE / 2, RING_Y - GLYPH_H / 2, col.center, col.centerColor);
+  col.lines.forEach(([text, color], i) => {
+    const height = i === 0 ? 6 : 3;
+    c.tick(cx - SPAN, ROWS[i] + GLYPH_H / 2, 7, height, color);
+    c.text(cx + SPAN - textWidth(text), ROWS[i], text, color);
+  });
 }
 
 const images = new Map(); // what the key shows -> data url; redrawn only when it changes
@@ -154,27 +208,12 @@ function cached(key, draw) {
   return images.get(key);
 }
 
-// What the key shows: { image, title }. Everything is in the image; the title stays empty.
+// What the key shows: { image, title }. `usage` is readUsage()'s { provider: usageLimits }.
 export function usageKey(usage, now = Date.now()) {
-  const fiveHour = current(usage?.fiveHour, now);
-  const sevenDay = current(usage?.sevenDay, now);
-  if (!fiveHour && !sevenDay) {
-    const image = cached('no data', () => {
-      const c = canvas();
-      c.text((SIZE - textWidth('no data')) / 2, LAYOUT[0].text, 'no data', DIM);
-      for (const row of LAYOUT) c.bar(PAD_X, SIZE - PAD_X, row.bar, BAR_HEIGHT, 0, DIM, TRACK);
-      return dataUrl(c.png());
-    });
-    return { image, title: '' };
-  }
-  const rows = [
-    ['5h', fiveHour],
-    ['7d', sevenDay],
-  ];
-  const key = JSON.stringify(rows.map(([l, w]) => [l, w && Math.round(w.percent), until(w?.resetsAt, now)]));
-  const image = cached(key, () => {
+  const columns = PROVIDERS.map((p) => column(summarize(usage?.[p], now), now));
+  const image = cached(JSON.stringify(columns), () => {
     const c = canvas();
-    rows.forEach(([label, w], i) => drawRow(c, LAYOUT[i], label, w, now));
+    columns.forEach((col, i) => drawColumn(c, COLUMNS[i], col));
     return dataUrl(c.png());
   });
   return { image, title: '' };

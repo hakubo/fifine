@@ -1,43 +1,41 @@
-# Claude Usage
+# AI Usage
 
-Shows how much of your Claude plan's 5-hour and 7-day limits you've used.
+One key with how much of your **Claude** (left) and **Antigravity** (right) limits you've used.
 
 ```
 ┌────────────────────┐
-│                    │
-│ 5h 43%      2h14m  │   5-hour window: used, time until it resets
-│ (█████░░░░░░░░░░)  │
-│ 7d 23%       3d4h  │   7-day window: used, time until it resets
-│ (███░░░░░░░░░░░░)  │
-│                    │
+│  ╭────╮   ╭────╮   │   outer ring: 5-hour window
+│  │ 43 │   │ 88 │   │   inner ring: weekly limit
+│  ╰────╯   ╰────╯   │
+│ ▬ 2h14   ▬ 1h20    │   5-hour window resets in
+│ - 3d4h   - 5d2h    │   weekly limit resets in
 └────────────────────┘
 ```
 
 | Look | Meaning |
 | --- | --- |
-| Blue bar, white % | Under 70% of that window used |
-| Orange bar and % | 70% or more: getting close to the limit |
-| Red bar and % | 90% or more: nearly rate-limited |
-| Grey, **no data** | No reading yet (see below) |
+| Blue ring | Under 70% of that limit used |
+| Orange ring, number and reset time | 70% or more: getting close |
+| Red ring, number and reset time | 90% or more: nearly rate-limited |
+| Middle number | 5-hour %, or the weekly % once that is 70% or more and higher |
+| Grey | No reading from T3, or T3's reading is over 30 minutes old |
+| `–` | No reading, or that window hasn't started yet (no reset time) |
 
-The plugin draws the whole key, text included, with a small pixel font. Press the key to open [claude.ai/settings/usage](https://claude.ai/settings/usage).
+Antigravity has separate pools (Claude & GPT, Gemini, …). Each Antigravity ring shows the most-used pool of that kind, with that pool's reset time.
+
+| Press | Does |
+| --- | --- |
+| Tap | Opens T3 Code |
+| Double tap | Opens a new T3 thread (`t3code://new`) |
 
 ## Where the numbers come from
 
-`claude-plugin/` is a small Claude Code plugin, **fifine-usage**. The installer adds its folder to `CLAUDE_CODE_PLUGIN_DIRS` in the `env` block of `~/.claude/settings.json`, so Claude Code loads it in every session, including `claude rc` and `claude -p` ones.
-
-1. After each turn, Claude Code tells the plugin the account's rate-limit readings (the `session.measure` event). It reads them once at session start, too.
-2. When the 5-hour or 7-day figure moves, the plugin writes both percentages and their reset times to `~/.claude/fifine/usage.json`.
-3. The Control Deck plugin watches `usage.json` and redraws the key. Every 30 seconds it also refreshes the countdown, and a window whose reset time has passed shows 0%.
-
-Your status line isn't touched.
+[T3 Code](https://t3.codes) checks each provider's rate limits and caches them in `~/.t3/caches/claudeAgent.json` and `~/.t3/caches/antigravity.json` (`usageLimits`). The plugin watches those files and redraws the key when they change, and every 30 seconds to update the countdowns. A window whose reset time has passed shows 0% straight away.
 
 Limitations:
 
-- Readings arrive only while some Claude Code session is taking turns. With nothing running, the key keeps the last reading, adjusted for any window that has since reset.
-- Only Claude subscription sessions (Pro/Max/Team) report rate limits. API-key, Bedrock and Vertex sessions don't, so they never overwrite a reading.
-- The limits are per account, so every session reports the same numbers. The latest reading wins.
-- The plugin uses Claude Code's plugin hooks API, which is early access and may change between Claude Code releases. If the key stops updating after an upgrade, run `claude plugin validate plugins/claude-usage/claude-plugin` and `claude plugin test plugins/claude-usage/claude-plugin`.
+- T3 only refreshes the files while it's running. When it's closed the key greys out after 30 minutes.
+- This is T3's internal cache, not a public API. If a T3 update changes it, the key shows grey `–`.
 
 ## Install
 
@@ -45,6 +43,6 @@ Limitations:
 node scripts/install.mjs claude-usage
 ```
 
-This also adds `claude-plugin/` to `env.CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json` (backed up to `settings.json.bak-fifine` first), keeping any folders already listed. The usage appears after the next turn in any Claude Code session started after the install.
+Older versions read `~/.claude/fifine/usage.json`, written by a Claude Code plugin the installer added to `env.CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. Installing this version takes that entry back out (backing the file up to `settings.json.bak-fifine` first).
 
 Log: `~/Library/Logs/fifine/claude-usage.log`.

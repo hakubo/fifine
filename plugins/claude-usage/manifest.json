@@ -1,9 +1,9 @@
 {
   "SDKVersion": 1,
   "Author": "Jakub Olek",
-  "Name": "Claude Usage",
-  "Description": "Your Claude plan's 5-hour and 7-day usage limits on a key.",
-  "Version": "0.2.0",
+  "Name": "AI Usage",
+  "Description": "Claude and Antigravity 5-hour and weekly usage limits on one key, from T3 Code.",
+  "Version": "0.3.0",
   "Icon": "images/plugin",
   "Category": "Claude Usage",
   "CategoryIcon": "images/category",
@@ -23,8 +23,8 @@
   "Actions": [
     {
       "UUID": "com.jakubolek.fifine.claude-usage.limits",
-      "Name": "Claude Usage",
-      "Tooltip": "Your 5-hour and 7-day Claude usage limits. Press to open claude.ai usage settings.",
+      "Name": "AI Usage",
+      "Tooltip": "Claude (left) and Antigravity (right) usage: outer ring 5-hour, inner ring weekly. Press to open T3 Code, double-press for a new thread.",
       "Icon": "images/usage",
       "States": [
         {
