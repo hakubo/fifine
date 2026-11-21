@@ -5,8 +5,8 @@
 //   node scripts/install.mjs <plugin...> --uninstall   remove them again
 //   node scripts/install.mjs <plugin...> --build-only  only build into dist/
 //
-// Plugins that hook into Claude Code (agent-sessions, claude-usage) also update
-// ~/.claude/settings.json, after backing it up to settings.json.bak-fifine.
+// Plugins that hook into Claude Code (agent-sessions) also update ~/.claude/settings.json, after
+// backing it up to settings.json.bak-fifine; claude-usage only removes its old plugin folder from it.
 
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
