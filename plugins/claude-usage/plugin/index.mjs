@@ -1,5 +1,5 @@
 // AI Usage plugin: one key with Claude's and Antigravity's 5-hour and weekly usage, read from T3
-// Code's provider cache. Tap opens T3 Code, double tap starts a new T3 thread.
+// Code's provider cache. Tap opens T3 Code, double tap starts a new T3 thread (⌘N in T3).
 
 import { watch } from 'node:fs';
 import { gestures } from './lib/gestures.mjs';
@@ -9,7 +9,16 @@ import { PROVIDERS, T3_CACHE_DIR, readUsage, usageKey } from './usage.mjs';
 // kept from the Claude-only key, so keys already on the deck carry over
 const ACTION = 'com.jakubolek.fifine.claude-usage.limits';
 const T3_BUNDLE = 'com.t3tools.t3code';
-const NEW_THREAD_URL = 't3code://new';
+// T3's `t3code://new` link only opens with a prompt ("This link has no prompt."), so a new, empty
+// thread is T3's own ⌘N (chat.new), pressed once T3 is in front. The keystroke needs Accessibility
+// access for Control Deck, which the Linear and Claude Session keys already rely on.
+const NEW_THREAD = `
+  tell application id "${T3_BUNDLE}" to activate
+  repeat 20 times
+    tell application "System Events" to if bundle identifier of first process whose frontmost is true is "${T3_BUNDLE}" then exit repeat
+    delay 0.1
+  end repeat
+  tell application "System Events" to keystroke "n" using command down`;
 
 const p = createPlugin('claude-usage');
 const keys = new Set();
@@ -26,7 +35,7 @@ p.action(ACTION, {
   willDisappear: (ctx) => keys.delete(ctx),
   ...gestures({
     tap: () => p.open('-b', T3_BUNDLE),
-    doubleTap: () => p.open(NEW_THREAD_URL),
+    doubleTap: () => p.osa(NEW_THREAD),
   }),
 });
 
