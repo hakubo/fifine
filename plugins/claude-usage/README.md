@@ -26,7 +26,7 @@ Antigravity has separate pools (Claude & GPT, Gemini, …). Each Antigravity rin
 | Press | Does |
 | --- | --- |
 | Tap | Opens T3 Code |
-| Double tap | Opens a new T3 thread (`t3code://new`) |
+| Double tap | Brings T3 Code forward and presses ⌘N for a new thread. Needs Accessibility access for Control Deck (System Settings → Privacy & Security → Accessibility) |
 
 ## Where the numbers come from
 
