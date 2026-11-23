@@ -2,11 +2,11 @@
 // in ~/.t3/caches/<provider>.json (`usageLimits`). T3 refreshes those files every few minutes
 // while it runs.
 //
-//    ( 43 )   ( 88 )      outer ring: 5-hour window; inner ring: weekly
-//   ▬ 2h14   ▬ 1h20       5-hour reset (thick tick, like the outer ring)
+//    ( 43 )   ( 18 )      outer ring: 5-hour window (number in middle); inner ring: weekly
+//    - 62%    - 51%       weekly % (thin tick, like the inner ring)
+//   ▬ 2h14   ▬ 4h05       5-hour reset (thick tick, like the outer ring)
 //   - 3d4h   - 5d2h       weekly reset (thin tick, like the inner ring)
 //
-// The middle number is the 5-hour percent, or the weekly one once that is the bigger worry.
 // Antigravity has a few pools (Claude & GPT, Gemini, …); each ring shows the most-used one.
 // The key is drawn whole into the image; the host's title stays empty.
 
@@ -30,10 +30,11 @@ const TEXT = '#f2f2f5';
 const FONT_SCALE = 2;
 const GLYPH_H = 7 * FONT_SCALE;
 const COLUMNS = [36, 108]; // ring centres
-const RING_Y = 54;
+const RING_Y = 38;
 const OUTER = { r: 28, width: 7 };
 const INNER = { r: 18, width: 4 };
-const ROWS = [96, 116]; // top of the 5-hour and weekly reset lines
+const WEEKLY_Y = 77; // top of the weekly % line
+const ROWS = [100, 119]; // top of the 5-hour and weekly reset lines
 const SPAN = 32; // reset line runs cx-SPAN .. cx+SPAN
 
 // orange when getting close, red when nearly out
@@ -172,18 +173,27 @@ function canvas() {
 
 // What one column shows, as plain values (also the cache key for the image).
 function column(summary, now) {
-  if (!summary) return { center: '–', centerColor: DIM, rings: [0, 0], ringColors: [DIM, DIM], lines: [['–', DIM], ['–', DIM]] };
+  if (!summary) {
+    return {
+      center: '–',
+      centerColor: DIM,
+      rings: [0, 0],
+      ringColors: [DIM, DIM],
+      weekly: { text: '–', color: DIM, tickColor: DIM },
+      lines: [['–', DIM], ['–', DIM]],
+    };
+  }
   const { session, weekly, stale } = summary;
   const pct = (w) => (w ? Math.round(w.percent) : 0);
   const tone = (w) => (stale || !w ? DIM : levelColor(pct(w)));
-  // the weekly limit takes the middle once it is the closer one to running out
-  const headline = weekly && pct(weekly) >= 70 && pct(weekly) > pct(session) ? weekly : session ?? weekly;
   const hot = (w) => !stale && w && pct(w) >= 70;
+  const valueColor = (w) => (stale || !w ? DIM : hot(w) ? levelColor(pct(w)) : TEXT);
   return {
-    center: headline ? String(pct(headline)) : '–',
-    centerColor: stale ? DIM : hot(headline) ? levelColor(pct(headline)) : TEXT,
+    center: session ? String(pct(session)) : '–',
+    centerColor: valueColor(session),
     rings: [pct(session), pct(weekly)],
     ringColors: [tone(session), tone(weekly)],
+    weekly: { text: weekly ? `${pct(weekly)}%` : '–', color: valueColor(weekly), tickColor: tone(weekly) },
     lines: [session, weekly].map((w) => [until(w?.resetsAt, now), hot(w) ? levelColor(pct(w)) : DIM]),
   };
 }
@@ -192,9 +202,14 @@ function drawColumn(c, cx, col) {
   c.ring(cx, RING_Y, OUTER.r, OUTER.width, col.rings[0], col.ringColors[0]);
   c.ring(cx, RING_Y, INNER.r, INNER.width, col.rings[1], col.ringColors[1]);
   c.text(cx - textWidth(col.center) / 2 + FONT_SCALE / 2, RING_Y - GLYPH_H / 2, col.center, col.centerColor);
+  const tickW = 7;
+  const gap = 5;
+  const startX = Math.round(cx - (tickW + gap + textWidth(col.weekly.text)) / 2);
+  c.tick(startX, WEEKLY_Y + GLYPH_H / 2, tickW, 3, col.weekly.tickColor);
+  c.text(startX + tickW + gap, WEEKLY_Y, col.weekly.text, col.weekly.color);
   col.lines.forEach(([text, color], i) => {
     const height = i === 0 ? 6 : 3;
-    c.tick(cx - SPAN, ROWS[i] + GLYPH_H / 2, 7, height, color);
+    c.tick(cx - SPAN, ROWS[i] + GLYPH_H / 2, tickW, height, color);
     c.text(cx + SPAN - textWidth(text), ROWS[i], text, color);
   });
 }
