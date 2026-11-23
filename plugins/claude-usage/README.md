@@ -4,10 +4,11 @@ One key with how much of your **Claude** (left) and **Antigravity** (right) limi
 
 ```
 ┌────────────────────┐
-│  ╭────╮   ╭────╮   │   outer ring: 5-hour window
-│  │ 43 │   │ 88 │   │   inner ring: weekly limit
+│  ╭────╮   ╭────╮   │   outer ring: 5-hour window (number in middle)
+│  │ 43 │   │ 18 │   │   inner ring: weekly limit
 │  ╰────╯   ╰────╯   │
-│ ▬ 2h14   ▬ 1h20    │   5-hour window resets in
+│  - 62%    - 51%    │   weekly limit used
+│ ▬ 2h14   ▬ 4h05    │   5-hour window resets in
 │ - 3d4h   - 5d2h    │   weekly limit resets in
 └────────────────────┘
 ```
@@ -17,7 +18,8 @@ One key with how much of your **Claude** (left) and **Antigravity** (right) limi
 | Blue ring | Under 70% of that limit used |
 | Orange ring, number and reset time | 70% or more: getting close |
 | Red ring, number and reset time | 90% or more: nearly rate-limited |
-| Middle number | 5-hour %, or the weekly % once that is 70% or more and higher |
+| Middle number | 5-hour % |
+| `- 62%` line | Weekly % (matches the inner ring) |
 | Grey | No reading from T3, or T3's reading is over 30 minutes old |
 | `–` | No reading, or that window hasn't started yet (no reset time) |
 
